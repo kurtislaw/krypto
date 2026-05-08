@@ -8,54 +8,78 @@ Object.defineProperty(window, 'matchMedia', {
   }),
 })
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { CipherPanel } from './CipherPanel'
 import { ThemeProvider } from '#/providers/ThemeProvider'
+
+let store: Record<string, string> = {}
+vi.stubGlobal('localStorage', {
+  getItem: (k: string) => store[k] ?? null,
+  setItem: (k: string, v: string) => { store[k] = v },
+  removeItem: (k: string) => { delete store[k] },
+})
+vi.stubGlobal('navigator', { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } })
 
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <ThemeProvider>{children}</ThemeProvider>
 }
 
+beforeEach(() => {
+  store = {}
+})
+
 describe('CipherPanel', () => {
   it('shows empty state when secret is blank', () => {
     render(<CipherPanel />, { wrapper: Wrapper })
     expect(screen.getByText('Enter a secret to get started')).toBeTruthy()
-    expect(screen.queryByLabelText(/plaintext/i)).toBeNull()
-    expect(screen.queryByLabelText(/ciphertext/i)).toBeNull()
+    expect(screen.queryByLabelText(/^input$/i)).toBeNull()
   })
 
-  it('reveals conversion boxes once a secret is entered', () => {
+  it('reveals input box once a secret is entered', () => {
     render(<CipherPanel />, { wrapper: Wrapper })
     fireEvent.change(screen.getByLabelText(/secret/i), { target: { value: 'mykey' } })
     expect(screen.queryByText('Enter a secret to get started')).toBeNull()
-    expect(screen.getByLabelText(/plaintext/i)).toBeTruthy()
-    expect(screen.getByLabelText(/ciphertext/i)).toBeTruthy()
+    expect(screen.getByLabelText(/^input$/i)).toBeTruthy()
   })
 
-  it('encrypts in real-time as plaintext is typed', () => {
+  it('auto-encrypts plaintext and shows preview', () => {
     render(<CipherPanel />, { wrapper: Wrapper })
     fireEvent.change(screen.getByLabelText(/secret/i), { target: { value: 'mykey' } })
-    fireEvent.change(screen.getByLabelText(/plaintext/i), { target: { value: 'hello' } })
-    const cipherBox = screen.getByLabelText(/ciphertext/i) as HTMLTextAreaElement
-    expect(cipherBox.value).toMatch(/^[A-Za-z0-9+/]+=*$/)
+    fireEvent.change(screen.getByLabelText(/^input$/i), { target: { value: 'hello' } })
+    const preview = screen.getByTestId('output-preview')
+    expect(preview.textContent).toMatch(/^[A-Za-z0-9+/]+=*$/)
   })
 
-  it('decrypts in real-time as ciphertext is typed', () => {
+  it('auto-decrypts ciphertext and shows preview', () => {
     render(<CipherPanel />, { wrapper: Wrapper })
     fireEvent.change(screen.getByLabelText(/secret/i), { target: { value: 'mykey' } })
-    fireEvent.change(screen.getByLabelText(/plaintext/i), { target: { value: 'hello' } })
-    const cipher = (screen.getByLabelText(/ciphertext/i) as HTMLTextAreaElement).value
-    // Clear plaintext then paste cipher to test decrypt direction
-    fireEvent.change(screen.getByLabelText(/plaintext/i), { target: { value: '' } })
-    fireEvent.change(screen.getByLabelText(/ciphertext/i), { target: { value: cipher } })
-    expect((screen.getByLabelText(/plaintext/i) as HTMLTextAreaElement).value).toBe('hello')
+    fireEvent.change(screen.getByLabelText(/^input$/i), { target: { value: 'hello' } })
+    const cipher = screen.getByTestId('output-preview').textContent ?? ''
+    fireEvent.change(screen.getByLabelText(/^input$/i), { target: { value: cipher } })
+    expect(screen.getByTestId('output-preview').textContent).toBe('hello')
   })
 
-  it('hides conversion boxes when secret is cleared', () => {
+  it('hides boxes when secret is cleared', () => {
     render(<CipherPanel />, { wrapper: Wrapper })
     fireEvent.change(screen.getByLabelText(/secret/i), { target: { value: 'mykey' } })
     fireEvent.change(screen.getByLabelText(/secret/i), { target: { value: '' } })
     expect(screen.getByText('Enter a secret to get started')).toBeTruthy()
+  })
+
+  it('shows hint initially and hides it after cmd+enter', () => {
+    render(<CipherPanel />, { wrapper: Wrapper })
+    fireEvent.change(screen.getByLabelText(/secret/i), { target: { value: 'mykey' } })
+    fireEvent.change(screen.getByLabelText(/^input$/i), { target: { value: 'hello' } })
+    expect(screen.getByText(/text → copies encrypted/)).toBeTruthy()
+    fireEvent.keyDown(screen.getByLabelText(/^input$/i), { key: 'Enter', metaKey: true })
+    expect(screen.queryByText(/text → copies encrypted/)).toBeNull()
+  })
+
+  it('does not show hint after it has been dismissed', () => {
+    localStorage.setItem('krypto_hint_dismissed', '1')
+    render(<CipherPanel />, { wrapper: Wrapper })
+    fireEvent.change(screen.getByLabelText(/secret/i), { target: { value: 'mykey' } })
+    expect(screen.queryByText(/text → copies encrypted/)).toBeNull()
   })
 })

@@ -1,102 +1,55 @@
-import { useState, useCallback } from 'react'
-import { Algorithm, type CipherDef, type ConversionState } from '#/types/cipher'
+import { useState, useCallback, useMemo } from 'react'
+import { Algorithm } from '#/types/cipher'
 import { ALGORITHMS } from '#/config/algorithms'
 
-export interface UseConverterReturn extends ConversionState {
-  setSecret: (secret: string) => void
-  setAlgorithm: (algorithm: Algorithm) => void
-  setPlaintext: (plaintext: string) => void
-  setCiphertext: (ciphertext: string) => void
+export interface UseConverterReturn {
+	secret: string
+	input: string
+	output: string
+	mode: 'encrypt' | 'decrypt'
+	error: string | null
+	setSecret: (s: string) => void
+	setInput: (s: string) => void
+	clearInput: () => void
+	decodeIfCipher: (text: string) => string | null
 }
 
-function tryEncrypt(
-  plain: string,
-  secret: string,
-  def: CipherDef,
-): { ciphertext: string; error: string | null } {
-  if (!plain) return { ciphertext: '', error: null }
-  try {
-    return { ciphertext: def.encrypt(plain, secret), error: null }
-  } catch {
-    return { ciphertext: '', error: 'Encryption failed' }
-  }
-}
+const def = ALGORITHMS[Algorithm.RC5]
 
-function tryDecrypt(
-  cipher: string,
-  secret: string,
-  def: CipherDef,
-): { plaintext: string; error: string | null } {
-  if (!cipher) return { plaintext: '', error: null }
-  try {
-    return { plaintext: def.decrypt(cipher, secret), error: null }
-  } catch {
-    return { plaintext: '', error: 'Invalid ciphertext or wrong secret' }
-  }
-}
-
-const INITIAL: ConversionState = {
-  secret: '',
-  algorithm: Algorithm.RC5,
-  plaintext: '',
-  ciphertext: '',
-  plainError: null,
-  cipherError: null,
-  lastEdited: null,
+function compute(
+	input: string,
+	secret: string,
+): { output: string; mode: 'encrypt' | 'decrypt'; error: string | null } {
+	if (!input || !secret) return { output: '', mode: 'encrypt', error: null }
+	// Try decrypt first; if it throws (not valid base64 / wrong length / bad padding), encrypt instead.
+	try {
+		return { output: def.decrypt(input, secret), mode: 'decrypt', error: null }
+	} catch {
+		try {
+			return { output: def.encrypt(input, secret), mode: 'encrypt', error: null }
+		} catch {
+			return { output: '', mode: 'encrypt', error: 'Encryption failed' }
+		}
+	}
 }
 
 export function useConverter(): UseConverterReturn {
-  const [state, setState] = useState<ConversionState>(INITIAL)
+	const [secret, setSecretState] = useState('')
+	const [input, setInputState] = useState('')
 
-  const setSecret = useCallback((secret: string) => {
-    setState(prev => {
-      if (!secret) {
-        return { ...prev, secret, plaintext: '', ciphertext: '', plainError: null, cipherError: null }
-      }
-      const def = ALGORITHMS[prev.algorithm]
-      if (prev.lastEdited === 'plain') {
-        const { ciphertext, error } = tryEncrypt(prev.plaintext, secret, def)
-        return { ...prev, secret, ciphertext, cipherError: error, plainError: null }
-      }
-      if (prev.lastEdited === 'cipher') {
-        const { plaintext, error } = tryDecrypt(prev.ciphertext, secret, def)
-        return { ...prev, secret, plaintext, plainError: error, cipherError: null }
-      }
-      return { ...prev, secret }
-    })
-  }, [])
+	const { output, mode, error } = useMemo(() => compute(input, secret), [input, secret])
 
-  const setAlgorithm = useCallback((algorithm: Algorithm) => {
-    setState(prev => {
-      const def = ALGORITHMS[algorithm]
-      if (!prev.secret) return { ...prev, algorithm }
-      if (prev.lastEdited === 'plain') {
-        const { ciphertext, error } = tryEncrypt(prev.plaintext, prev.secret, def)
-        return { ...prev, algorithm, ciphertext, cipherError: error, plainError: null }
-      }
-      if (prev.lastEdited === 'cipher') {
-        const { plaintext, error } = tryDecrypt(prev.ciphertext, prev.secret, def)
-        return { ...prev, algorithm, plaintext, plainError: error, cipherError: null }
-      }
-      return { ...prev, algorithm }
-    })
-  }, [])
+	const setSecret = useCallback((s: string) => setSecretState(s), [])
+	const setInput = useCallback((s: string) => setInputState(s), [])
+	const clearInput = useCallback(() => setInputState(''), [])
+	const decodeIfCipher = useCallback((text: string): string | null => {
+		if (!secret) return null
+		try {
+			return def.decrypt(text, secret)
+		} catch {
+			return null
+		}
+	}, [secret])
 
-  const setPlaintext = useCallback((plaintext: string) => {
-    setState(prev => {
-      if (!prev.secret) return { ...prev, plaintext, lastEdited: 'plain' }
-      const { ciphertext, error } = tryEncrypt(plaintext, prev.secret, ALGORITHMS[prev.algorithm])
-      return { ...prev, plaintext, ciphertext, cipherError: error, plainError: null, lastEdited: 'plain' }
-    })
-  }, [])
-
-  const setCiphertext = useCallback((ciphertext: string) => {
-    setState(prev => {
-      if (!prev.secret) return { ...prev, ciphertext, lastEdited: 'cipher' }
-      const { plaintext, error } = tryDecrypt(ciphertext, prev.secret, ALGORITHMS[prev.algorithm])
-      return { ...prev, ciphertext, plaintext, cipherError: error, plainError: null, lastEdited: 'cipher' }
-    })
-  }, [])
-
-  return { ...state, setSecret, setAlgorithm, setPlaintext, setCiphertext }
+	return { secret, input, output, mode, error, setSecret, setInput, clearInput, decodeIfCipher }
 }
