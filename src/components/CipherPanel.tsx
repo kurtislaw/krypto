@@ -48,10 +48,10 @@ export function CipherPanel() {
             letterSpacing: "-0.01em",
           }}
         >
-          kryptography
+          kryptography (˶˃ ᵕ ˂˶)
         </h1>
         <p style={{ fontSize: "12px", color: "var(--color-muted)", margin: 0 }}>
-          encode and decode messages
+          encode and decode ts
         </p>
       </header>
 
