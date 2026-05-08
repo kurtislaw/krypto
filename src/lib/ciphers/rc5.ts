@@ -2,7 +2,7 @@
  * RC5-32/12 block cipher.
  * Block size: 64 bits (two 32-bit words). Rounds: 12. Key: any length.
  * Plaintext is UTF-8 encoded, PKCS7 padded, then encrypted in ECB mode.
- * Ciphertext is hex-encoded.
+ * Ciphertext is base64-encoded (matches encode-decode.com output).
  */
 
 const ROUNDS = 12
@@ -92,22 +92,22 @@ export function encrypt(plaintext: string, secret: string): string {
     outView.setUint32(i + 4, B, true)
   }
 
-  return Array.from(out).map(b => b.toString(16).padStart(2, '0')).join('')
+  return btoa(String.fromCharCode(...out))
 }
 
-/** Decrypts a hex-encoded RC5-32/12 ciphertext. Throws on malformed input. */
+/** Decrypts a base64-encoded RC5-32/12 ciphertext. Throws on malformed input. */
 export function decrypt(ciphertext: string, secret: string): string {
-  if (ciphertext.length % 16 !== 0) {
-    throw new Error('Ciphertext length must be a multiple of 16 hex characters')
+  let raw: string
+  try {
+    raw = atob(ciphertext)
+  } catch {
+    throw new Error('Ciphertext must be base64-encoded')
   }
-  if (!/^[0-9a-fA-F]+$/.test(ciphertext)) {
-    throw new Error('Ciphertext must be hex-encoded')
+  if (raw.length === 0 || raw.length % 8 !== 0) {
+    throw new Error('Ciphertext length must be a multiple of 8 bytes')
   }
 
-  const bytes = new Uint8Array(ciphertext.length / 2)
-  for (let i = 0; i < ciphertext.length; i += 2) {
-    bytes[i / 2] = parseInt(ciphertext.slice(i, i + 2), 16)
-  }
+  const bytes = Uint8Array.from(raw, c => c.charCodeAt(0))
 
   const S = expandKey(secret)
   const out = new Uint8Array(bytes.length)

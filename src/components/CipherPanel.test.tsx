@@ -38,7 +38,7 @@ describe('CipherPanel', () => {
     fireEvent.change(screen.getByLabelText(/secret/i), { target: { value: 'mykey' } })
     fireEvent.change(screen.getByLabelText(/plaintext/i), { target: { value: 'hello' } })
     const cipherBox = screen.getByLabelText(/ciphertext/i) as HTMLTextAreaElement
-    expect(cipherBox.value).toMatch(/^[0-9a-f]+$/)
+    expect(cipherBox.value).toMatch(/^[A-Za-z0-9+/]+=*$/)
   })
 
   it('decrypts in real-time as ciphertext is typed', () => {
