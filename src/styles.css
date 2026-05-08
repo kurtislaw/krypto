@@ -1,0 +1,99 @@
+@import "@fontsource/geist-sans/400.css";
+@import "@fontsource/geist-sans/500.css";
+@import "tailwindcss";
+@import "tw-animate-css";
+@plugin "@tailwindcss/typography";
+
+/* Class-based dark mode: add .dark to <html> to activate */
+@variant dark (&:where(.dark, .dark *));
+
+/* ── Design tokens ── */
+:root {
+  --color-bg: #f7f7f5;
+  --color-surface: #f0f0ee;
+  --color-surface-focus: #ebebea;
+  --color-text: #1a1a1a;
+  --color-muted: #999999;
+  --color-error: #c0392b;
+}
+
+.dark {
+  --color-bg: #0d0d0d;
+  --color-surface: #161616;
+  --color-surface-focus: #1e1e1e;
+  --color-text: #e0e0e0;
+  --color-muted: #555555;
+  --color-error: #e57373;
+}
+
+/* ── Base resets ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  transition: background-color 200ms ease-out;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Geist Sans', system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+  transition: background-color 200ms ease-out, color 200ms ease-out;
+}
+
+/* ── Form element resets — borderless, blending ── */
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border: none;
+  outline: none;
+  box-shadow: none;
+  border-radius: 0;
+  width: 100%;
+  padding: 10px 12px;
+  transition: background-color 200ms ease-out;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  background-color: var(--color-surface-focus);
+}
+
+textarea {
+  resize: none;
+}
+
+select option {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+
+/* ── Animations ── */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 280ms ease-out forwards;
+}
