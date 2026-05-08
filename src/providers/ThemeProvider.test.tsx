@@ -13,7 +13,7 @@ Object.defineProperty(window, 'matchMedia', {
   }),
 })
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import { render, screen, act } from '@testing-library/react'
 import { useContext } from 'react'
 import { ThemeProvider, ThemeContext } from './ThemeProvider'
@@ -29,6 +29,9 @@ function Inspector() {
 }
 
 describe('ThemeProvider', () => {
+  afterEach(() => {
+    document.documentElement.classList.remove('dark')
+  })
   it('provides a valid theme value', () => {
     render(<ThemeProvider><Inspector /></ThemeProvider>)
     expect(['light', 'dark']).toContain(screen.getByTestId('theme').textContent)
