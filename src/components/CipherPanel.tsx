@@ -1,9 +1,9 @@
-import { useConverter } from '#/lib/hooks/useConverter'
-import { AlgorithmSelect } from './AlgorithmSelect'
-import { ConversionBox } from './ConversionBox'
-import { EmptyState } from './EmptyState'
-import { SecretInput } from './SecretInput'
-import { ThemeToggle } from './ThemeToggle'
+import { useConverter } from "#/lib/hooks/useConverter";
+import { AlgorithmSelect } from "./AlgorithmSelect";
+import { ConversionBox } from "./ConversionBox";
+import { EmptyState } from "./EmptyState";
+import { SecretInput } from "./SecretInput";
+import { ThemeToggle } from "./ThemeToggle";
 
 /**
  * Smart container for the cipher tool.
@@ -22,40 +22,40 @@ export function CipherPanel() {
     setAlgorithm,
     setPlaintext,
     setCiphertext,
-  } = useConverter()
+  } = useConverter();
 
   return (
     <div
       style={{
-        maxWidth: '680px',
-        margin: '0 auto',
-        padding: '72px 24px 64px',
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '36px',
+        maxWidth: "680px",
+        margin: "0 auto",
+        padding: "72px 24px 64px",
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        gap: "36px",
       }}
     >
       <ThemeToggle />
 
-      <header style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      <header style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
         <h1
           style={{
-            fontSize: '15px',
+            fontSize: "15px",
             fontWeight: 500,
-            color: 'var(--color-text)',
+            color: "var(--color-text)",
             margin: 0,
-            letterSpacing: '-0.01em',
+            letterSpacing: "-0.01em",
           }}
         >
-          krypto
+          kryptography
         </h1>
-        <p style={{ fontSize: '12px', color: 'var(--color-muted)', margin: 0 }}>
+        <p style={{ fontSize: "12px", color: "var(--color-muted)", margin: 0 }}>
           encode and decode messages
         </p>
       </header>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
         <SecretInput value={secret} onChange={setSecret} />
         <AlgorithmSelect value={algorithm} onChange={setAlgorithm} />
       </div>
@@ -63,7 +63,7 @@ export function CipherPanel() {
       {secret ? (
         <div
           className="animate-fade-up"
-          style={{ display: 'flex', gap: '20px' }}
+          style={{ display: "flex", gap: "20px" }}
         >
           <ConversionBox
             label="Plaintext"
@@ -84,5 +84,5 @@ export function CipherPanel() {
         <EmptyState />
       )}
     </div>
-  )
+  );
 }
