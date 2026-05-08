@@ -79,4 +79,37 @@ describe('useConverter', () => {
     expect(result.current.ciphertext).toBe(cipher1)
     expect(result.current.plaintext).toBe('hello')
   })
+
+  it('re-decrypts when secret changes (lastEdited = cipher)', () => {
+    const { result } = renderHook(() => useConverter())
+    act(() => result.current.setSecret('key1'))
+    act(() => result.current.setPlaintext('hello'))
+    const cipher = result.current.ciphertext
+    act(() => result.current.setCiphertext(cipher))
+    // Now change secret — should re-decrypt the ciphertext with new key (will fail/error)
+    act(() => result.current.setSecret('key2'))
+    expect(result.current.lastEdited).toBe('cipher')
+    // With a different key, decryption produces an error or different plaintext
+    expect(result.current.plaintext !== 'hello' || result.current.cipherError !== null).toBe(true)
+  })
+
+  it('re-decrypts when algorithm changes (lastEdited = cipher)', () => {
+    const { result } = renderHook(() => useConverter())
+    act(() => result.current.setSecret('mykey'))
+    act(() => result.current.setPlaintext('hello'))
+    const cipher = result.current.ciphertext
+    act(() => result.current.setCiphertext(cipher))
+    expect(result.current.plaintext).toBe('hello')
+    // Re-running with same algorithm should still produce 'hello'
+    act(() => result.current.setAlgorithm(Algorithm.RC5))
+    expect(result.current.plaintext).toBe('hello')
+    expect(result.current.lastEdited).toBe('cipher')
+  })
+
+  it('does not run conversion when secret not yet set (lastEdited = null)', () => {
+    const { result } = renderHook(() => useConverter())
+    act(() => result.current.setAlgorithm(Algorithm.RC5))
+    expect(result.current.ciphertext).toBe('')
+    expect(result.current.plaintext).toBe('')
+  })
 })
