@@ -60,6 +60,17 @@ describe('CipherPanel', () => {
     expect(screen.getByTestId('output-preview').textContent).toBe('hello')
   })
 
+  it('grows the input to fit its content, capped at the viewport height', () => {
+    render(<CipherPanel />, { wrapper: Wrapper })
+    fireEvent.change(screen.getByLabelText(/secret/i), { target: { value: 'mykey' } })
+    const input = screen.getByLabelText(/^input$/i) as HTMLTextAreaElement
+    Object.defineProperty(input, 'scrollHeight', { configurable: true, value: 480 })
+    fireEvent.change(input, { target: { value: 'a long pasted string' } })
+    expect(input.style.height).toBe('480px')
+    expect(input.style.maxHeight).toBe('100dvh')
+    expect(input.style.overflowY).toBe('auto')
+  })
+
   it('hides boxes when secret is cleared', () => {
     render(<CipherPanel />, { wrapper: Wrapper })
     fireEvent.change(screen.getByLabelText(/secret/i), { target: { value: 'mykey' } })
