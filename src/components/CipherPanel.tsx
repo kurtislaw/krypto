@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { useConverter } from '#/lib/hooks/useConverter'
 import { EmptyState } from './EmptyState'
 import { SecretInput } from './SecretInput'
@@ -12,6 +12,22 @@ export function CipherPanel() {
 		if (typeof localStorage === 'undefined') return true
 		return !localStorage.getItem(HINT_KEY)
 	})
+	const inputRef = useRef<HTMLTextAreaElement>(null)
+
+	// Grow the input with its content; maxHeight caps it at the viewport, past which it scrolls
+	// biome-ignore lint/correctness/useExhaustiveDependencies: re-measure when the text changes or the box remounts
+	useLayoutEffect(() => {
+		const el = inputRef.current
+		if (!el) return
+		function fitToContent() {
+			if (!el) return
+			el.style.height = 'auto'
+			el.style.height = `${el.scrollHeight}px`
+		}
+		fitToContent()
+		window.addEventListener('resize', fitToContent)
+		return () => window.removeEventListener('resize', fitToContent)
+	}, [input, secret])
 
 	function handlePaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
 		const pasted = e.clipboardData.getData('text')
@@ -71,6 +87,7 @@ export function CipherPanel() {
 			{secret ? (
 				<div className="animate-fade-up" style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
 					<textarea
+						ref={inputRef}
 						aria-label="Input"
 						value={input}
 						onChange={e => setInput(e.target.value)}
@@ -79,7 +96,13 @@ export function CipherPanel() {
 						placeholder="type or paste…"
 						rows={6}
 						spellCheck={false}
-						style={{ fontFamily: 'monospace', fontSize: '12px', width: '100%' }}
+						style={{
+							fontFamily: 'monospace',
+							fontSize: '12px',
+							width: '100%',
+							maxHeight: '100dvh',
+							overflowY: 'auto',
+						}}
 					/>
 
 					{(output || error) && (
